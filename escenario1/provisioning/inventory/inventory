@@ -1,0 +1,36 @@
+########################################################################
+#################	GROUPS 		################################
+########################################################################
+
+##### VICTIMA1 #####
+[victimas]
+victima1 
+
+##### FIREWALLS #####
+[firewalls1]
+firewall1
+
+[firewalls2]
+firewall2 
+
+##### ATACANTE #####
+[atacantes]
+atacante 
+
+##### WEB_SERVER #####
+[web_servers]
+web_server 
+
+##### PROXY_SERVER #####
+[proxy_servers]
+proxy_server 
+
+##### ALL NETWORK HOSTS #####
+[all_hosts]
+victima1
+firewall1
+firewall2
+atacante
+web_server
+proxy_server
+

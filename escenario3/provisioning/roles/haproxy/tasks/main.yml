@@ -1,0 +1,32 @@
+---
+# This role installs HAProxy and configures it.
+
+- name: Establecer hostname, haproxy  
+  hostname:
+    name: "haproxy"
+
+##########################################################################
+#INSTALLING HAPROXY
+##########################################################################
+
+- name: Add the  PPA
+  apt_repository: repo='ppa:vbernat/haproxy-1.6'
+
+- name: Update the apt cache
+  apt: update_cache=yes cache_valid_time=3600 
+
+- name: Install haproxy
+  apt: name=haproxy state=installed
+
+##########################################################################
+#CONFIGURING AND START HAPROXY
+##########################################################################
+
+- name: Configure the haproxy cnf file with hosts
+  template: src=haproxy.cfg.j2 dest=/etc/haproxy/haproxy.cfg
+  notify: restart haproxy
+
+- name: Start the haproxy service
+  service: name=haproxy state=started enabled=yes
+
+

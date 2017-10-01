@@ -1,0 +1,6 @@
+- name: empty rol
+  debug: 
+    msg: "this rol it's empty, but it is avaiable for your configuration"
+
+
+

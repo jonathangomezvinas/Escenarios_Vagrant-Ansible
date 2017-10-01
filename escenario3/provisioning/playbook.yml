@@ -1,0 +1,23 @@
+---
+- hosts: web_servers
+  become: true
+  ignore_errors: yes
+  roles:
+    - nginx_wp
+- hosts: atacantes
+  become: true
+  ignore_errors: yes
+  roles:
+    - atacante
+- hosts: ha_proxy_server
+  become: true
+  ignore_errors: yes
+  roles:
+    - haproxy
+- hosts: tomcat_servers
+  become: true
+  ignore_errors: yes
+  roles:
+    - apache_tomcat
+
+

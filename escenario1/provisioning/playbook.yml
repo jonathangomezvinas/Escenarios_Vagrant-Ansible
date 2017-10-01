@@ -1,0 +1,32 @@
+---
+- hosts: victimas
+  become: true
+  ignore_errors: yes
+  roles:
+    - victima1
+- hosts: firewalls1
+  become: true
+  ignore_errors: yes
+  roles:
+    - firewall1
+- hosts: firewalls2
+  become: true
+  ignore_errors: yes
+  roles:
+    - firewall2
+- hosts: atacantes
+  become: true
+  ignore_errors: yes
+  roles:
+    - atacante
+- hosts: web_servers
+  become: true
+  ignore_errors: yes
+  roles:
+    - web_server
+- hosts: proxy_servers
+  become: true
+  ignore_errors: yes
+  roles:
+    - proxy_server   
+

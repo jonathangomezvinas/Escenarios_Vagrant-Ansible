@@ -1,0 +1,29 @@
+#!/bin/vbash
+
+source /opt/vyatta/etc/functions/script-template
+
+config
+
+#Establecemos las interfaces
+set int ethernet eth0 description NAT
+set int ethernet eth1 description NET2
+set int ethernet eth1 address {{ F2_NET2 }}
+set int ethernet eth2 description DMZ
+set int ethernet eth2 address {{ F2_DMZ }}
+
+#Creamos la tabla de rutas
+
+#set protocols static route {{DEFAULT}} next-hop {{F2_DMZ}} distance '1'
+set protocols static route {{ NET1 }} next-hop {{ F1_DMZ }} distance '1'
+#set protocol static interface-route 192.168.2.0/24 next-hop-interface eth2
+#set protocol static interface-route 192.168.3.0/24 next-hop-interface eth1
+
+#Configuracion Snat
+set nat source rule 100 outbound-interface 'eth0'
+set nat source rule 100 source address '192.168.0.0/22'
+set nat source rule 100 translation address 'masquerade'
+
+commit
+save
+
+

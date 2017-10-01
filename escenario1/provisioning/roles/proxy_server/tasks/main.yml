@@ -1,0 +1,7 @@
+- name: Establecer hostname, proxy_server 
+  hostname:
+    name: "proxyserver"   
+- name: Eliminar la nueva gateway que pone vagrant por defecto.
+  command: ip route del default via {{ VAGRANT_ROUTE_DEFAULT }} dev eth0
+- name: Añadir la nueva gateway que sustituirá la que pone vagrant por defecto.
+  command: ip route add default via {{ F2_DMZ }} dev eth1

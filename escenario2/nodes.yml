@@ -1,0 +1,39 @@
+---
+##################################################################################################
+########################            ATACKER             ##########################################
+##################################################################################################
+- name: atacante
+  guest: debian
+  box: starflame/kali2_linux4.0.0_amd64 
+  mem: 2048
+  cpus: 2
+  forwarded_port_guest: 22 
+  forwarded_port_host:  2200
+  interfaces:  #Internal only interfaces
+    - ip: 192.168.1.2
+      auto_config: "True"
+      network_name: NET1
+      method: static
+      type: private_network
+  url: "https://atlas.hashicorp.com/starflame/boxes/kali2_linux4.0.0_amd64"
+  version: "2.0.0"
+##################################################################################################
+########################           VICTIMA 1            ##########################################
+##################################################################################################
+- name: victima1
+  guest: debian
+  box: Sliim/metasploitable2
+  mem: 2048
+  cpus: 2
+  username: msfadmin
+  password: msfadmin
+  forwarded_port_guest: 22 
+  forwarded_port_host:  2201
+  interfaces:  #Internal only interfaces
+    - ip: 192.168.1.3
+      auto_config: "True"
+      network_name: NET1
+      method: static
+      type: private_network
+  url: "https://app.vagrantup.com/Sliim/boxes/metasploitable2"
+  version: "2"

@@ -1,0 +1,18 @@
+- name: Establecer hostname, atacante 
+  hostname:
+    name: "atacante"
+
+##########################################################################
+#CONFIGURING NETWORKING
+##########################################################################
+- name: Add static route
+  command: ip route add {{ DMZ }} via {{ PROXY_EXT }} dev eth1
+
+#- name: change keyboard language to Spanish
+#  command: setxkbmap es sundeadkeys
+
+#- name: change keyboard language to Spanish
+#  command: sudo setxkbmap es
+
+
+

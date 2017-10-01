@@ -1,0 +1,12 @@
+---
+- hosts: victimas
+#  become: true
+  ignore_errors: yes
+  roles:
+    - victima1
+- hosts: atacantes
+  become: true
+  ignore_errors: yes
+  roles:
+    - atacante
+

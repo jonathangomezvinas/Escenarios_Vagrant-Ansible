@@ -1,0 +1,77 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+#import the yaml module
+require 'yaml'
+
+# Read yaml node definitions to create **Update nodes.yml to reflect any changes
+nodes = YAML.load_file('nodes.yml')
+
+VAGRANT_VM_PROVIDER = "virtualbox"
+ANSIBLE_RAW_SSH_ARGS = []
+
+nodes.each do |nodes|
+  ANSIBLE_RAW_SSH_ARGS << "-o IdentityFile=.vagrant/machines/#{nodes["name"]}/#{VAGRANT_VM_PROVIDER}/private_key"
+end
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+
+Vagrant.configure("2") do |config|
+  nodes.each do |nodes|
+    config.vm.define nodes["name"] do |node|      
+      if nodes["guest"] == "debian"  
+        node.vm.guest = :debian
+      elsif nodes["guest"] == "mint"
+        node.vm.guest = :mint
+      #elsif nodes["guest"] == "linux"
+      #  node.vm.guest = :linux
+      elsif nodes["guest"] == "ubuntu"
+        node.vm.guest = :ubuntu
+      end
+      #node.vm.hostname = nodes["name"]
+      node.vm.box = nodes["box"]
+      node.vm.network :forwarded_port, guest: nodes["forwarded_port_guest"], host: nodes["forwarded_port_host"], id: "ssh", auto_correct: true
+      node.vm.network :forwarded_port, guest: nodes["forwarded_port_guest1"], host: nodes["forwarded_port_host1"], id: "prueba", auto_correct: true
+      interfaces = nodes["interfaces"]
+      interfaces.each do |int|
+        if int["method"] == "static" and int["type"] == "private_network" and int["network_name"] != "None" and int["auto_config"] == "True"
+          node.vm.network "private_network", ip: int["ip"], virtualbox__intnet: int["network_name"]
+        end
+        if int["method"] == "static" and int["type"] == "private_network" and int["network_name"] != "None" and int["auto_config"] == "False"
+          node.vm.network "private_network", ip: int["ip"], virtualbox__intnet: int["network_name"], auto_config: false
+        end
+        if int["method"] == "static" and int["type"] == "private_network" and int["network_name"] == "None" and int["auto_config"] == "True"
+          node.vm.network "private_network", ip: int["ip"]
+        end
+        if int["method"] == "static" and int["type"] == "private_network" and int["network_name"] == "None" and int["auto_config"] == "False"
+          node.vm.network "private_network", ip: int["ip"], auto_config: false
+        end
+        if int["method"] == "dhcp" and int["type"] == "private_network"
+          node.vm.network "private_network", type: "dhcp"
+        end
+      end
+      config.vm.box_url = nodes["url"]
+      config.vm.box_version = nodes["version"]
+      config.vm.box_check_update = false
+      config.vm.provider :virtualbox do |v|
+        v.gui = false
+        v.name = nodes["name"]		
+        v.memory = nodes["mem"]
+        v.cpus = nodes["cpus"]
+      end
+      if nodes["name"] == "nginx_wp"  #nombre de la ultima maquina del archivo nodes.yml
+        config.vm.provision :ansible do |ansible|
+          ansible.limit = "all"
+#          ansible.verbose = "v"
+          ansible.playbook = "./provisioning/playbook.yml"
+          ansible.inventory_path = "./provisioning/inventory/inventory"
+          ansible.raw_ssh_args = ANSIBLE_RAW_SSH_ARGS
+        end
+      end
+    end
+  end 
+end
+
+

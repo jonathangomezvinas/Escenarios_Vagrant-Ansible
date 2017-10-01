@@ -1,0 +1,230 @@
+- name: Establecer hostname, web_server  
+  hostname:
+    name: "tomcat"
+
+##########################################################################
+#1) INSTALLING JAVA	
+##########################################################################
+#Tomcat requiere Java para ser instalado en el servidor asi que cualquier código de aplicacion web de Java puede ser ejecutado.
+
+- name: Update the apt cache
+  apt: update_cache=yes cache_valid_time=3600 
+
+- name: Install Java Development KIT package.
+  apt: name={{item}} state=installed
+  with_items:
+    - default-jdk
+
+##########################################################################
+#2) CREATE TOMCAT USER	
+##########################################################################
+#Por motivos de seguridad, Tomat debería ser ejecutado con un usuario sin privilegios. Por ello crearemos un nuevo usuario y un nuevo grupo que ejecutará el servicio Tomcat.
+
+- name: Create tomcat group
+  group:
+    name: tomcat
+    system: true
+
+- name: Create tomcat user
+  user:
+    name: tomcat
+    group: tomcat
+    shell: /bin/false
+    home: "{{tomcat_home_path}}"
+    system: true
+    createhome: true
+    move_home: true
+
+##########################################################################
+#3) DOWNLOAD AND DECOMPRESS TOMCAT
+##########################################################################
+- name: Download and extract Tomcat to tomcat home directory
+  unarchive:
+    src: "{{tomcat_archive_url}}/{{tomcat_archive_name}}{{tomcat_archive_name_ext}}"
+    dest: "{{tomcat_home_path}}"
+    remote_src: true
+    group: tomcat
+    creates: "{{tomcat_archive_install_path}}"
+
+##########################################################################
+#4) SET PERMISSIONS
+##########################################################################
+
+- name: Make the tomcat user the owner of the webapps, work, temp, and logs directories
+  file:
+    path: "{{tomcat_archive_install_path}}/{{item}}"
+    owner: tomcat
+    group: tomcat
+    recurse: true
+  with_items:
+    - webapps
+    - work
+    - temp
+    - logs
+    - ..
+
+#- name: Make the tomcat user the owner of the opth/tomcat directory.
+#  file:
+#    path: "{{tomcat_archive_install_path}}"
+#    owner: tomcat
+#    group: tomcat
+#    recurse: true
+
+- name: Grant Tomcat group read access to the conf directory
+  file:
+    path: "{{tomcat_archive_install_path}}/conf"
+    state: directory
+    mode: "g+r"
+    recurse: true
+
+- name: Grant Tomcat group execute access to the conf directory itself
+  file:
+    path: "{{tomcat_archive_install_path}}/conf"
+    state: directory
+    mode: "g+x"
+
+##########################################################################
+#5) CONFIGURE TOMCAT USERS AND REMOTE ACCESS
+##########################################################################
+
+- name: Create tomcat-users.xml
+  template:
+    src: templates/tomcat-users.xml
+    dest: "{{tomcat_archive_install_path}}/conf/tomcat-users.xml"
+  notify: restart tomcat
+
+- name: Create context.xml to permit remote access
+  template:
+    src: templates/context.xml
+    dest: "{{tomcat_archive_install_path}}/webapps/manager/META-INF/context.xml"
+  notify: restart tomcat
+
+- name: Symlink Tomcat to current version
+  file:
+    src: "{{tomcat_archive_install_path}}"
+    dest: "{{tomcat_install_link}}"
+    state: link
+  notify: restart tomcat
+
+- name: Create systemd service script for Tomcat
+  template:
+    src: "templates/tomcat.service"
+    dest: "/etc/systemd/system/tomcat.service"
+  notify: restart tomcat
+
+- name: Allow all access to tcp port 80
+  ufw:
+    state: enabled
+    rule: allow
+    port: "{{item}}"
+    proto: tcp
+  with_items:
+    - "{{ http_port }}"
+    - "{{ https_port }}"
+    - "{{ ssh_port }}"
+
+- name: Start and enable Tomcat service
+  systemd:
+    name: tomcat
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Upload application.war to Tomcat
+  copy:
+    src: "files/tomcat/{{ application_name }}.war"
+    dest: "/tmp"
+  notify: restart tomcat
+
+
+- name: Install unzip
+  apt: name={{item}} state=installed
+  with_items:
+    - unzip
+
+- name: Create application folder
+  file:
+    dest: /opt/tomcat/current/webapps/{{ application_name}} 
+    state: directory
+
+- name: Unzip application.war file in application folder
+  unarchive:
+    src: "/tmp/{{ application_name }}.war"
+    dest: "/opt/tomcat/current/webapps/{{ application_name }}"
+    copy: no
+
+############################################################################
+#INSTALLING MySQL
+############################################################################
+- name: Install MySQL
+  apt: name={{item}} state=present
+  with_items:
+    - mysql-server
+
+- name: Install python-MySQL
+  apt: name=python-mysqldb state=installed update_cache=yes 
+#Ansible instala mysql con un la contraseña de toot vacia y deja y deja algunos test 
+#de basededatos disponibles para usuarios anonimos, por ello, realizaremos lo siguiente:
+#     1.Cambiar la contraseña por defectod de root.
+#     2.Remover los usuarios anónimos.
+#     3.Remover el test de basededatos y sus accesos.
+#Para cambiar la pass primero necesitamos una nueva, la cual genereamos con openssl con 15-caracters-password.
+#- name: Generate new root password
+#  command: openssl rand -hex 7 creates=/root/.my.cnf
+#  register: mysql_new_root_pass
+- name: Remove anonymous useres
+  mysql_user: name="" state=absent
+#  when: mysql_new_root_pass.changed
+- name: Remove test database
+  mysql_db: name=test state=absent
+#  when: mysql_new_root_pass.changed
+- name: Update root password
+  mysql_user: name=root host={{item}} password={{mysql_new_root_pass}}
+  with_items:
+    - "{{ ansible_hostname}}"
+    - 127.0.0.1
+    - ::1
+    - localhost
+#  when: mysql_new_root_pass.changed
+
+- name : Output new root password
+  debug: msg="New root password is {{mysql_new_root_pass}}"
+#  when: mysql_new_root_pass.changed
+
+- name: Copy the my.cnf configuration file into my environment
+  template:
+    src: templates/mysql/my.cnf
+    dest: "/root/.my.cnf"
+
+#este archivo contiene el usuario y la contraseña para el usuario root de MySQL, este el requerido para permitir a Ansible hacer camios sin intervencion del usuario.
+
+
+############################################################################
+#CREATING DATA BASE AND IMPORTING .SQL 
+############################################################################
+- name: Create a new database with name 'alumnos'
+  mysql_db:
+    name: alumnos
+    state: present
+
+- name: Copy BBDD_UAH.sql to the virtual machine
+  template:
+    src: templates/mysql/{{ bbdd_filename }}.sql
+    dest: "/tmp/{{ bbdd_filename }}.sql"
+
+
+- name: Import BBDD_UAH.sql similar to mysql -u <username> -p <password> < hostname.sql
+  mysql_db:
+    state: import
+    name: alumnos
+    target: /tmp/{{ bbdd_filename }}.sql
+
+##########################################################################
+#CONFIGURING NETWORKING
+##########################################################################
+- name: Add static route
+  command: ip route add {{ EXT }} via {{ PROXY_DMZ }} dev enp0s8  
+
+
+
+

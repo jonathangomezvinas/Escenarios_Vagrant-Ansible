@@ -1,0 +1,6 @@
+bbdd_filename: "wordpress"
+mysql_new_root_pass: "Residente1"
+mysql_wordpress_user: "wordpress"
+mysql_wordpress_pass: "bananas"
+project_folder: "tfguah.es"
+images_wp: "images_wp"

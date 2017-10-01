@@ -1,0 +1,88 @@
+---
+##################################################################################################
+########################           APPLICATION SERVER   ##########################################
+##################################################################################################
+- name: tomcat
+  guest: ubuntu
+  box: boxcutter/ubuntu1604
+  mem: 2048
+  cpus: 1
+  forwarded_port_guest: 22 
+  forwarded_port_host:  2200
+  forwarded_port_guest1: 8080
+  forwarded_port_host1: 13000
+  interfaces:  #Internal only interfaces
+    - ip: 192.168.2.201
+      auto_config: "True"
+      network_name: DMZ
+      method: static
+      type: private_network
+  url: "https://atlas.hashicorp.com/boxcutter/boxes/ubuntu1604"
+  version: "2.0.26" 
+##################################################################################################
+########################           LOAD BALANCER        ##########################################
+##################################################################################################
+- name: haproxy
+  guest: ubuntu
+  box: ubuntu/trusty64
+  mem: 1024
+  cpus: 1
+  forwarded_port_guest: 22 
+  forwarded_port_host:  2201
+  forwarded_port_guest1: 80 
+  forwarded_port_host1: 13001
+  interfaces:  #Internal only interfaces
+    - ip: 192.168.1.100
+      auto_config: "True"
+      network_name: EXT
+      method: static
+      type: private_network
+    - ip: 192.168.2.202
+      auto_config: "True"
+      network_name: DMZ
+      method: static
+      type: private_network
+  url: "https://vagrantcloud.com/ubuntu/boxes/trusty64"
+  version: "20170619.0.0"
+##################################################################################################
+########################            ATACKER             ##########################################
+##################################################################################################
+- name: atacante
+  guest: debian
+  box: starflame/kali2_linux4.0.0_amd64 
+  mem: 2048
+  cpus: 2
+#  ansible_ssh_host_ip: 192.168.250.6  #HostOnly interface for management
+  forwarded_port_guest: 22 
+  forwarded_port_host:  2202
+  forwarded_port_guest1: 80 
+  forwarded_port_host1: 13003
+  interfaces:  #Internal only interfaces
+    - ip: 192.168.1.2
+      auto_config: "True"
+      network_name: EXT
+      method: static
+      type: private_network
+  url: "https://atlas.hashicorp.com/starflame/boxes/kali2_linux4.0.0_amd64"
+  version: "2.0.0"
+##################################################################################################
+########################           WEB SERVER           ##########################################
+##################################################################################################
+- name: nginx_wp
+  guest: ubuntu
+  box: ubuntu/trusty64 
+  mem: 512
+  cpus: 1
+  forwarded_port_guest: 22 
+  forwarded_port_host:  2203
+  forwarded_port_guest1: 80 
+  forwarded_port_host1: 13002
+  interfaces:  #Internal only interfaces
+    - ip: 192.168.2.200
+      auto_config: "True"
+      network_name: DMZ
+      method: static
+      type: private_network
+  url: "https://vagrantcloud.com/ubuntu/boxes/trusty64"
+  version: "20170313.0.3"
+##################################################################################################

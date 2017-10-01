@@ -1,0 +1,11 @@
+- name: Establecer hostname, victima1
+  hostname:
+    name: "victima1"
+- name: Eliminar la nueva gateway que pone vagrant por defecto.
+  command: ip route del {{ DEFAULT }} via {{ VAGRANT_ROUTE_DEFAULT }} dev eth0
+- name: Añadir la ip a la interfaz eth1
+  command: ip addr add {{ VICTIMA1 }} dev eth1
+- name: Añadir la nueva gateway que sustituirá la que pone vagrant por defecto.
+  command: ip route add {{ DEFAULT }} via {{ F1_NET1 }} dev eth1
+
+

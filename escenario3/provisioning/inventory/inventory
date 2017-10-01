@@ -1,0 +1,27 @@
+########################################################################
+#################	GROUPS 		################################
+########################################################################
+
+##### ATACANTE #####
+[atacantes]
+atacante 
+
+##### NGINX_WP #####
+[web_servers]
+nginx_wp 
+
+##### LOAD BALANCER #####
+[ha_proxy_server]
+haproxy 
+
+##### APACHE_TOMCAT #####
+[tomcat_servers]
+tomcat 
+
+##### ALL NETWORK HOSTS #####
+[all_hosts]
+atacante
+nginx_wp
+haproxy
+tomcat
+

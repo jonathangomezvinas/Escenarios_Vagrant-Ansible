@@ -1,0 +1,11 @@
+- name: Establecer hostname, firewall2
+  hostname:
+    name: "firewall2"
+- name: Subir al firewall2 el script con la configuracion
+  template:
+    src: firewall2.sh.j2
+    dest: /tmp/script.sh
+    mode: 0755
+- name: Ejecutar el script para el firewall
+  command: /tmp/script.sh
+#    src: ./provisioning/roles/firewall2/files/firewall2.sh.j2

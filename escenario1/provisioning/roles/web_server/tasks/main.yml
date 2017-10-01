@@ -1,0 +1,97 @@
+- name: Establecer hostname, web_server  
+  hostname:
+    name: "webserver"
+##########################################################################
+#INSTALLING PHP
+##########################################################################
+- name: Add the ondrej PHP PPA(repositorio con muchas herramientas PHP).
+  apt_repository: repo='ppa:ondrej/php'
+- name: Update the apt cache
+  apt: update_cache=yes cache_valid_time=3600 
+- name: Install PHP
+  apt: name={{item}} state=installed
+  with_items:
+    - php
+    - php-fpm
+    - php-mysql
+    - php-xml
+#Como instalando PHP se instala Apache2 por defecto, procedemos a desisntalarlo
+- name: Remove Apache2
+  apt: name=apache2 state=removed
+############################################################################
+#INSTALLING MySQL
+############################################################################
+- name: Install MySQL
+  apt: name={{item}} state=present
+  with_items:
+    - mysql-server
+
+- name: Install python-MySQL
+  apt: name=python-mysqldb state=installed update_cache=yes 
+#Ansible instala mysql con un la contraseña de toot vacia y deja y deja algunos test 
+#de basededatos disponibles para usuarios anonimos, por ello, realizaremos lo siguiente:
+#     1.Cambiar la contraseña por defectod de root.
+#     2.Remover los usuarios anónimos.
+#     3.Remover el test de basededatos y sus accesos.
+#Para cambiar la pass primero necesitamos una nueva, la cual genereamos con openssl con 15-caracters-password.
+- name: Generate new root password
+  command: openssl rand -hex 7 creates=/root/.my.cnf
+  register: mysql_new_root_pass
+- name: Remove anonymous useres
+  mysql_user: name="" state=absent
+  when: mysql_new_root_pass.changed
+- name: Remove test database
+  mysql_db: name=test state=absent
+  when: mysql_new_root_pass.changed
+- name: Update root password
+  mysql_user: name=root host={{item}} password={{mysql_new_root_pass.stdout}}
+  with_items:
+    - "{{ ansible_hostname}}"
+    - 127.0.0.1
+    - ::1
+    - localhost
+  when: mysql_new_root_pass.changed
+- name : Output new root password
+  debug: msg="New root password is {{mysql_new_root_pass.stdout}}"
+  when: mysql_new_root_pass.changed
+- name: Copy the my.cnf configuration file into my environment
+  template: src=~/Escritorio/firewall/provisioning/roles/web_server/files/mysql/my.cnf dest=/root/.my.cnf
+  when: mysql_new_root_pass.changed
+#este archivo contiene el usuario y la contraseña para el usuario root de MySQL, este el requerido para permitir a Ansible hacer camios sin intervencion del usuario.
+
+############################################################################
+#INSTALLING NGINX
+############################################################################
+
+- name: Install nginx
+  apt: name=nginx state=installed
+- name: Start nginx
+  service: name=nginx state=started
+#- name: Copy the default configuration file into my environment
+#  template: src=~/Escritorio/firewall/provisioning/roles/web_server/files/nginx/default dest=/etc/nginx/sites-available/default
+
+
+
+############################################################################
+#CONFIGURAR RUTA GENERAL
+############################################################################
+- name: Eliminar la nueva gateway que pone vagrant por defecto.
+  command: ip route del default via {{ VAGRANT_ROUTE_DEFAULT }} dev eth0
+- name: Añadir la nueva gateway que sustituirá la que pone vagrant por defecto.
+  command: ip route add default via {{ F2_DMZ }} dev eth1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
